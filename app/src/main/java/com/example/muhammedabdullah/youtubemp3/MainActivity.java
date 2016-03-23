@@ -51,10 +51,18 @@ public class MainActivity extends AppCompatActivity {
     public void download(View view){
         FetchTittle ft = null;
         url = et.getText().toString();
-        if(url.equals("")){
+        if(url.equals("") || !url.contains("youtu")){
             tv.setText("You should enter a valid url.");
             return;
         }
+
+        String tempStr = url;
+        tempStr = tempStr.split("be",2)[1];
+        if(!tempStr.substring(0,4).equals(".com")){ // youtu.be to youtube.com
+            String ext = url.split("/",4)[3];
+            url = "https://www.youtube.com/watch?v="+ext;
+        }
+
         downloadUrl = "http://www.youtubeinmp3.com/fetch/?video="+url;
         parseUrl = "http://www.youtubeinmp3.com/fetch/?format=text&video="+url;
         try {
@@ -65,8 +73,12 @@ public class MainActivity extends AppCompatActivity {
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
-        tv.setText(MainActivity.title);
-
+        if(MainActivity.title.equals("music.mp3"))
+        {
+            tv.setText("The video is protected by copyright.");
+            return;
+        }
+        tv.setText(MainActivity.title+" is downloaded");
     }
 
 
@@ -89,10 +101,18 @@ public class MainActivity extends AppCompatActivity {
             try {
 
                 Document p = Jsoup.connect(parseUrl).get();
-                cont = p.body().text();
+                String tmp = p.body().text();
+                if(!tmp.contains("Title") || !tmp.contains("Link")){
+                    return null;
+                }
+                cont = tmp;
                 cont = cont.split("Title: ",2)[1];
                 cont = cont.split(" Length: ",2)[0];
                 cont = cont + ".mp3";
+
+                tmp = tmp.split("Link: ",2)[1];
+                downloadUrl = tmp;
+
                 MainActivity.title = cont;
                 String str = Context.DOWNLOAD_SERVICE;
                 DownloadManager dm;
@@ -113,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
        @Override
        protected void onPostExecute(Void aVoid) {
            progressDialog.dismiss();
+           MainActivity.title = "music.mp3";
        }
    }
 }
